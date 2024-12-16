@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"regexp"
 
 	// "strconv"
 	// "time"
@@ -43,12 +44,9 @@ func main() {
 	ConnectDatabase()
 
 	router := gin.Default()
-
-	// Apply custom CORS middleware
 	router.Use(CORSMiddleware())
-
 	router.POST("/user/create/", CreateUserHandler)
-	router.Run(":3000")
+	router.Run(":8000")
 }
 
 var db *sqlx.DB
@@ -69,18 +67,24 @@ func CreateUserHandler(c *gin.Context) {
 	type createUserRequest struct {
 		Name    string `json:"name" binding:"required"`
 		Email   string `json:"email" binding:"required"`
-		Phone   string `json:"phone" binding:"required"`
+		Phone   int    `json:"phone" binding:"required"`
 		Message string `json:"message" binding:"required"`
 	}
 
 	var request createUserRequest
+
 	err = c.ShouldBindJSON(&request)
 	if err != nil {
 		log.Fatal(err)
 		c.JSON(http.StatusBadRequest, gin.H{"FAILED": err})
 		return
 	}
-
+	// Validate email format
+	if err := validationEmail(request.Email); err != nil {
+		log.Println("Email validation error:", err)
+		c.JSON(http.StatusBadRequest, gin.H{"FAILED": err.Error()})
+		return
+	}
 	query := "INSERT INTO users (name, email, phone, message) VALUES (?, ?, ?, ?)"
 	result, err := db.Exec(query, request.Name, request.Email, request.Phone, request.Message)
 	if err != nil {
@@ -97,6 +101,17 @@ func CreateUserHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"SUCCESS": userID})
+}
+
+func validationEmail(email string) error {
+	// Regular expression for validating an email
+	var emailRegex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(emailRegex)
+
+	if !re.MatchString(email) {
+		return fmt.Errorf("invalid email format")
+	}
+	return nil
 }
 
 // func GetUserDetails(c *gin.Context) {
