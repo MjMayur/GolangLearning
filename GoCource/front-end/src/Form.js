@@ -19,6 +19,7 @@ function UserForm() {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
+
     setFormData({
       ...formData,
       [name]: value,
@@ -27,33 +28,69 @@ function UserForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    console.log("Form Data Submitted:", formData);
     // Here you can add your form submission logic
   };
-  const [records, setRecords] = useState([
-    {
-      id: 1,
-      name: "John Doe",
-      email: "john@example.com",
-      phone: "123-456-7890",
-    },
-    {
-      id: 2,
-      name: "Jane Smith",
-      email: "jane@example.com",
-      phone: "987-654-3210",
-    },
-    // Add more records as needed
-  ]);
+  const [records, setRecords] = useState([]);
+
+  React.useEffect(() => {
+    // Fetch API
+    const apiUrl = "http://localhost:8000/user/list/";
+    let headers = new Headers();
+    headers.append("Content-Type", "application/json");
+    fetch(apiUrl, {
+      method: "GET",
+      headers: headers,
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        setRecords(res.Users);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
+  }, []);
 
   const handleEdit = (id) => {
-    // Implement edit logic here
-    console.log("Edit record with id:", id);
+    const apiUrl = `http://localhost:8000/user/get/${id}`;
+
+    // Fetch API
+    let headers = new Headers();
+    headers.append("Content-Type", "application/json");
+    fetch(apiUrl, {
+      method: "GET",
+      headers: headers,
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        setFormData({
+          name: res.User.name,
+          email: res.User.email,
+          phone: res.User.phone,
+          message: res.User.message,
+        });
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
 
   const handleDelete = (id) => {
-    const updatedRecords = records.filter((record) => record.id !== id);
-    setRecords(updatedRecords);
+    const apiUrl = `http://localhost:8000/user/delete/${id}`;
+
+    // Fetch API
+    let headers = new Headers();
+    headers.append("Content-Type", "application/json");
+    fetch(apiUrl, {
+      method: "DELETE",
+      headers: headers,
+    })
+      .then((res) => res.json())
+      .then((res) => {
+        console.log(res);
+      })
+      .catch((error) => {
+        console.log(error);
+      });
   };
 
   const submitForm = async () => {
@@ -194,6 +231,15 @@ function UserForm() {
                   textAlign: "center",
                 }}
               >
+                Message
+              </th>
+              <th
+                style={{
+                  padding: "10px",
+                  border: "1px solid #dddddd",
+                  textAlign: "center",
+                }}
+              >
                 Actions
               </th>
             </tr>
@@ -209,6 +255,9 @@ function UserForm() {
                 </td>
                 <td style={{ padding: "10px", border: "1px solid #dddddd" }}>
                   {record.phone}
+                </td>
+                <td style={{ padding: "10px", border: "1px solid #dddddd" }}>
+                  {record.message}
                 </td>
                 <td style={{ padding: "10px", border: "1px solid #dddddd" }}>
                   <button
