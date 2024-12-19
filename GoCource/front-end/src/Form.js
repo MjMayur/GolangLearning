@@ -16,7 +16,10 @@ function UserForm() {
     phone: "",
     message: "",
   });
-
+  const [isUpdate, setIsUpdate] = useState({
+    id: 0,
+    update: false,
+  });
   const handleChange = (e) => {
     const { name, value } = e.target;
 
@@ -62,6 +65,7 @@ function UserForm() {
     })
       .then((res) => res.json())
       .then((res) => {
+        setIsUpdate({ id: id, update: true });
         setFormData({
           name: res.User.name,
           email: res.User.email,
@@ -95,23 +99,41 @@ function UserForm() {
 
   const submitForm = async () => {
     // API endpoint
-    const apiUrl = "http://localhost:8000/user/create/";
-
-    // Fetch API
-    let headers = new Headers();
-    headers.append("Content-Type", "application/json");
-    fetch(apiUrl, {
-      method: "POST",
-      headers: headers,
-      body: JSON.stringify(formData),
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        console.log(res);
+    if (!isUpdate.update) {
+      const apiUrl = `http://localhost:8000/user/create/`;
+      // Fetch API
+      let headers = new Headers();
+      headers.append("Content-Type", "application/json");
+      fetch(apiUrl, {
+        method: "POST",
+        headers: headers,
+        body: JSON.stringify(formData),
       })
-      .catch((error) => {
-        console.log(error);
-      });
+        .then((res) => res.json())
+        .then((res) => {
+          console.log(res);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    } else {
+      const apiUrl = `http://localhost:8000/user/update/${isUpdate.id}`;
+      // Fetch API
+      let headers = new Headers();
+      headers.append("Content-Type", "application/json");
+      fetch(apiUrl, {
+        method: "PATCH",
+        headers: headers,
+        body: JSON.stringify(formData),
+      })
+        .then((res) => res.json())
+        .then((res) => {
+          console.log(res);
+        })
+        .catch((error) => {
+          console.log(error);
+        });
+    }
   };
 
   return (
@@ -180,7 +202,7 @@ function UserForm() {
               style={{ width: "100%" }}
               onClick={submitForm}
             >
-              Submit
+              {isUpdate.update ? "Update" : "Submit"}
             </Button>
           </Form>
         </CardBody>
