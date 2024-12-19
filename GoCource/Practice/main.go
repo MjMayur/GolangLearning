@@ -31,13 +31,12 @@ func CORSMiddleware() gin.HandlerFunc {
 		c.Writer.Header().Set("Access-Control-Allow-Origin", "*")
 		c.Writer.Header().Set("Access-Control-Allow-Credentials", "true")
 		c.Writer.Header().Set("Access-Control-Allow-Headers", "Content-Type, Authorization, X-Requested-With")
-		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS")
+		c.Writer.Header().Set("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE,PATCH, OPTIONS")
 
 		if c.Request.Method == "OPTIONS" {
 			c.AbortWithStatus(http.StatusNoContent)
 			return
 		}
-
 		c.Next()
 	}
 }
@@ -51,6 +50,7 @@ func main() {
 	router.GET("/user/list/", ListUser)
 	router.DELETE("/user/delete/:id", DeleteUser)
 	router.GET("/user/get/:id", GetDetails)
+	router.PATCH("/user/update/:id", UpdateUser)
 	router.Run(":8000")
 }
 
@@ -79,18 +79,6 @@ type createUserRequest struct {
 	Message string `json:"message" binding:"required"`
 }
 
-func validationEmail(email string) error {
-	// Regular expression for validating an email
-
-	var emailRegex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
-	re := regexp.MustCompile(emailRegex)
-
-	if !re.MatchString(email) {
-		return errors.New("invalid email format")
-	}
-	return nil
-}
-
 type listRes struct {
 	Id      int    `db:"id"`
 	Name    string `db:"name"`
@@ -105,6 +93,18 @@ type tempResponse struct {
 	Email   string `json:"email"`
 	Phone   string `json:"phone"`
 	Message string `json:"message"`
+}
+
+func validationEmail(email string) error {
+	// Regular expression for validating an email
+
+	var emailRegex = `^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$`
+	re := regexp.MustCompile(emailRegex)
+
+	if !re.MatchString(email) {
+		return errors.New("invalid email format")
+	}
+	return nil
 }
 
 func ListUser(c *gin.Context) {
@@ -164,8 +164,12 @@ func CreateUserHandler(c *gin.Context) {
 	query := "INSERT INTO users (name, email, phone, message) VALUES (?, ?, ?, ?)"
 	result, err := db.Exec(query, request.Name, request.Email, request.Phone, request.Message)
 	if err != nil {
+		res := responseStruct{
+			Code:    400,
+			Massage: "Internal Server Error.",
+		}
 		log.Fatal(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": res})
 		return
 	}
 
@@ -198,17 +202,19 @@ func DeleteUser(c *gin.Context) {
 	query := "DELETE FROM users WHERE id=?"
 	_, err = db.Exec(query, userID)
 	if err != nil {
+		res := responseStruct{
+			Code:    400,
+			Massage: "Internal Server Error.",
+		}
 		log.Fatal(err)
-		c.JSON(http.StatusForbidden, gin.H{
-			"code":    400,
-			"message": err.Error(),
-		})
+		c.JSON(http.StatusInternalServerError, res)
 		return
 	}
-	c.JSON(http.StatusOK, gin.H{
-		"code":    200,
-		"message": "Record Deleted successfully",
-	})
+	res := responseStruct{
+		Code:    200,
+		Massage: "Record Deleted successfully",
+	}
+	c.JSON(http.StatusOK, res)
 }
 
 func GetDetails(c *gin.Context) {
@@ -227,8 +233,12 @@ func GetDetails(c *gin.Context) {
 	query := "SELECT * FROM users WHERE id=?"
 	err = db.Get(&tempModels, query, userID)
 	if err != nil {
+		res := responseStruct{
+			Code:    400,
+			Massage: "Internal Server Error.",
+		}
 		log.Fatal(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": res})
 		return
 	}
 
@@ -279,8 +289,12 @@ func UpdateUser(c *gin.Context) {
 	query := "UPDATE users SET name=?, phone=?, email=?,message=? WHERE id=?"
 	_, err = db.Exec(query, request.Name, request.Phone, request.Email, request.Message, userID)
 	if err != nil {
+		res := responseStruct{
+			Code:    400,
+			Massage: "Internal Server Error.",
+		}
 		log.Fatal(err)
-		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": err})
+		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": res})
 	}
 
 	c.JSON(http.StatusOK, gin.H{
@@ -288,136 +302,3 @@ func UpdateUser(c *gin.Context) {
 		"message": "Success recorder Updated successfully.",
 	})
 }
-
-// func GetUserDetails(c *gin.Context) {
-
-// 	userIDstr := c.Param("id")
-// 	userID, err := strconv.Atoi(userIDstr)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"FAILED": err})
-// 	}
-
-// 	type userModel struct {
-// 		ID        int          `db:"id"`
-// 		Name      string       `db:"name"`
-// 		Age       int          `db:"age"`
-// 		Email     string       `db:"email"`
-// 		CreatedAt sql.NullTime `db:"created_at"`
-// 	}
-
-// 	tempModel := userModel{}
-
-// 	query := "SELECT * FROM users WHERE id=?"
-// 	err = db.Get(&tempModel, query, userID)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": err})
-// 		return
-// 	}
-
-// 	type tempResponse struct {
-// 		Name     string `json:"name"`
-// 		Age      int    `json:"age"`
-// 		Email    string `json:"email"`
-// 		CreateAt string `json:"createdAt"`
-// 	}
-
-// 	response := tempResponse{
-// 		Name:     tempModel.Name,
-// 		Age:      tempModel.Age,
-// 		Email:    tempModel.Email,
-// 		CreateAt: tempModel.CreatedAt.Time.Format("2006-01-02 15:04:05"),
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{"SUCCESS": response})
-// }
-
-// func GetUserListing(c *gin.Context) {
-
-// 	type userModel struct {
-// 		ID       int       `db:"id"`
-// 		Name     string    `db:"name"`
-// 		Age      int       `db:"age"`
-// 		Email    string    `db:"email"`
-// 		CreateAt time.Time `db:"created_at"`
-// 	}
-
-// 	tempModels := []userModel{}
-
-// 	query := "SELECT * FROM users"
-// 	err = db.Select(&tempModels, query)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": err})
-// 	}
-
-// 	type tempResponse struct {
-// 		Name     string `json:"name"`
-// 		Age      int    `json:"age"`
-// 		Email    string `json:"email"`
-// 		CreateAt string `json:"created_at"`
-// 	}
-
-// 	response := []tempResponse{}
-
-// 	for _, tempModel := range tempModels {
-// 		response = append(response, tempResponse{
-// 			Name:     tempModel.Name,
-// 			Age:      tempModel.Age,
-// 			Email:    tempModel.Email,
-// 			CreateAt: tempModel.CreateAt.Format("2006-01-02 15:04:05"),
-// 		})
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{"SUCCESS": response})
-// }
-
-// func UpdateUserDetails(c *gin.Context) {
-// 	userIDstr := c.Param("id")
-// 	userID, err := strconv.Atoi(userIDstr)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"FAILED": err})
-// 	}
-
-// 	type updateUserRequest struct {
-// 		Name  string `json:"name" binding:"required"`
-// 		Age   int    `json:"age" binding:"required"`
-// 		Email string `json:"email" binding:"required"`
-// 	}
-
-// 	var request updateUserRequest
-// 	err = c.ShouldBindJSON(&request)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"FAILED": err})
-// 	}
-
-// 	query := "UPDATE users SET name=?, age=?, email=? WHERE id=?"
-// 	_, err = db.Exec(query, request.Name, request.Age, request.Email, userID)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": err})
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{"SUCCESS": "user data update successfully"})
-// }
-
-// func DeleteUser(c *gin.Context) {
-// 	userIDstr := c.Param("id")
-// 	userID, err := strconv.Atoi(userIDstr)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		c.JSON(http.StatusBadRequest, gin.H{"FAILED": err})
-// 	}
-
-// 	query := "DELETE FROM users WHERE id=?"
-// 	_, err = db.Exec(query, userID)
-// 	if err != nil {
-// 		log.Fatal(err)
-// 		c.JSON(http.StatusInternalServerError, gin.H{"Query Exection Error": err})
-// 	}
-
-// 	c.JSON(http.StatusOK, gin.H{"SUCCESS": "user deleted"})
-// }
