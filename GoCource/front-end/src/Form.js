@@ -16,13 +16,9 @@ function UserForm() {
     phone: "",
     message: "",
   });
-  const [isUpdate, setIsUpdate] = useState({
-    id: 0,
-    update: false,
-  });
+
   const handleChange = (e) => {
     const { name, value } = e.target;
-
     setFormData({
       ...formData,
       [name]: value,
@@ -31,62 +27,46 @@ function UserForm() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
+    console.log("Form Data Submitted:", formData);
     // Here you can add your form submission logic
   };
-  const [records, setRecords] = useState([]);
-
-  React.useEffect(() => {
-    // Fetch API
-    const apiUrl = "http://localhost:8000/user/list/";
-    let headers = new Headers();
-    headers.append("Content-Type", "application/json");
-    fetch(apiUrl, {
-      method: "GET",
-      headers: headers,
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        setRecords(res.Users);
-      })
-      .catch((error) => {
-        console.log(error);
-      });
-  }, []);
+  const [records, setRecords] = useState([
+    {
+      id: 1,
+      name: "John Doe",
+      email: "john@example.com",
+      phone: "123-456-7890",
+    },
+    {
+      id: 2,
+      name: "Jane Smith",
+      email: "jane@example.com",
+      phone: "987-654-3210",
+    },
+    // Add more records as needed
+  ]);
 
   const handleEdit = (id) => {
-    const apiUrl = `http://localhost:8000/user/get/${id}`;
-
-    // Fetch API
-    let headers = new Headers();
-    headers.append("Content-Type", "application/json");
-    fetch(apiUrl, {
-      method: "GET",
-      headers: headers,
-    })
-      .then((res) => res.json())
-      .then((res) => {
-        setIsUpdate({ id: id, update: true });
-        setFormData({
-          name: res.User.name,
-          email: res.User.email,
-          phone: res.User.phone,
-          message: res.User.message,
-        });
-      })
-      .catch((error) => {
-        console.log(error);
-      });
+    // Implement edit logic here
+    console.log("Edit record with id:", id);
   };
 
   const handleDelete = (id) => {
-    const apiUrl = `http://localhost:8000/user/delete/${id}`;
+    const updatedRecords = records.filter((record) => record.id !== id);
+    setRecords(updatedRecords);
+  };
+
+  const submitForm = async () => {
+    // API endpoint
+    const apiUrl = "http://localhost:8000/user/create/";
 
     // Fetch API
     let headers = new Headers();
     headers.append("Content-Type", "application/json");
     fetch(apiUrl, {
-      method: "DELETE",
+      method: "POST",
       headers: headers,
+      body: JSON.stringify(formData),
     })
       .then((res) => res.json())
       .then((res) => {
@@ -95,45 +75,6 @@ function UserForm() {
       .catch((error) => {
         console.log(error);
       });
-  };
-
-  const submitForm = async () => {
-    // API endpoint
-    if (!isUpdate.update) {
-      const apiUrl = `http://localhost:8000/user/create/`;
-      // Fetch API
-      let headers = new Headers();
-      headers.append("Content-Type", "application/json");
-      fetch(apiUrl, {
-        method: "POST",
-        headers: headers,
-        body: JSON.stringify(formData),
-      })
-        .then((res) => res.json())
-        .then((res) => {
-          console.log(res);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    } else {
-      const apiUrl = `http://localhost:8000/user/update/${isUpdate.id}`;
-      // Fetch API
-      let headers = new Headers();
-      headers.append("Content-Type", "application/json");
-      fetch(apiUrl, {
-        method: "PATCH",
-        headers: headers,
-        body: JSON.stringify(formData),
-      })
-        .then((res) => res.json())
-        .then((res) => {
-          console.log(res);
-        })
-        .catch((error) => {
-          console.log(error);
-        });
-    }
   };
 
   return (
@@ -202,7 +143,7 @@ function UserForm() {
               style={{ width: "100%" }}
               onClick={submitForm}
             >
-              {isUpdate.update ? "Update" : "Submit"}
+              Submit
             </Button>
           </Form>
         </CardBody>
@@ -253,15 +194,6 @@ function UserForm() {
                   textAlign: "center",
                 }}
               >
-                Message
-              </th>
-              <th
-                style={{
-                  padding: "10px",
-                  border: "1px solid #dddddd",
-                  textAlign: "center",
-                }}
-              >
                 Actions
               </th>
             </tr>
@@ -277,9 +209,6 @@ function UserForm() {
                 </td>
                 <td style={{ padding: "10px", border: "1px solid #dddddd" }}>
                   {record.phone}
-                </td>
-                <td style={{ padding: "10px", border: "1px solid #dddddd" }}>
-                  {record.message}
                 </td>
                 <td style={{ padding: "10px", border: "1px solid #dddddd" }}>
                   <button
