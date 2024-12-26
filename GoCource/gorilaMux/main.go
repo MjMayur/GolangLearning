@@ -5,12 +5,15 @@ import (
 	"io"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 )
 
 func main() {
 	http.HandleFunc("/", param)
 	http.HandleFunc("/url", paramWithURL)
 	http.HandleFunc("/file", readFile)
+	http.HandleFunc("/cookie", writeCookie)
+	http.HandleFunc("/read/cookie", readCookie)
 	http.ListenAndServe(":8080", nil)
 }
 
@@ -70,4 +73,27 @@ func readFile(res http.ResponseWriter, req *http.Request) {
 	<input type="Submit">
 	</form>
 	`+s)
+}
+
+func writeCookie(res http.ResponseWriter, req *http.Request) {
+	cookie, err := req.Cookie("my-cookie")
+	if err == http.ErrNoCookie {
+		cookie = &http.Cookie{
+			Name:  "my-cookie",
+			Value: "0",
+		}
+	}
+	count, _ := strconv.Atoi(cookie.Value)
+	count++
+	cookie.Value = strconv.Itoa(count)
+	http.SetCookie(res, cookie)
+	io.WriteString(res, cookie.Value)
+}
+
+func readCookie(res http.ResponseWriter, req *http.Request) {
+	c, err := req.Cookie("my-cookie")
+	if err != nil {
+		http.Error(res, err.Error(), http.StatusNoContent)
+	}
+	fmt.Fprintln(res, "this is your cookie.", c)
 }
