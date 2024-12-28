@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>User Details</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #f0f0f0;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .user-details-container {
+        background-color: #fff;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        width: 400px;
+        text-align: center;
+      }
+      .user-details-container h2 {
+        margin-bottom: 20px;
+        font-size: 24px;
+        color: #333;
+      }
+      .user-details-container p {
+        margin: 10px 0;
+        font-size: 18px;
+        color: #555;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="user-details-container">
+      {{if .}}
+      <h2>User Information</h2>
+      <p><strong>Username:</strong> {{.UserName}}</p>
+      <p><strong>Email:</strong> {{.Email}}</p>
+      <p><strong>Password:</strong> {{.Password}}</p>
+      {{else}}
+      <h2>No User Information Available</h2>
+      {{ end }}
+      <h2><a href="/logout">Log Out</a></h2>
+    </div>
+  </body>
+</html>
